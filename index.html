@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Little Bug's Pomodoro Timer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        .retro-font {
+            font-family: 'Press Start 2P', cursive;
+        }
+        .pixel-border {
+            border: 4px solid #28A745;
+            border-radius: 0;
+            box-shadow: 5px 5px 0 #1a682c;
+        }
+        .pixel-border-red {
+            border: 4px solid #E94560;
+            box-shadow: 5px 5px 0 #a32e43;
+        }
+        .pixel-border-yellow {
+            border: 4px solid #FFC107;
+            box-shadow: 5px 5px 0 #b18705;
+        }
+        .pixel-border-blue {
+            border: 4px solid #3B82F6;
+            box-shadow: 5px 5px 0 #1d4ed8;
+        }
+        .btn-hover:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 3px 3px 0 #1a682c;
+        }
+        .btn-hover-red:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 3px 3px 0 #a32e43;
+        }
+        .btn-hover-yellow:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 3px 3px 0 #b18705;
+        }
+        .btn-hover-blue:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 3px 3px 0 #1d4ed8;
+        }
+        
+        /* Hide scrollbar while allowing scrolling */
+        body::-webkit-scrollbar {
+            display: none;
+        }
+        
+        body {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            background-color: #f3f4f6;
+        }
+        
+        .pixel-background {
+            background: repeating-linear-gradient(
+                45deg,
+                #4A4A4A,
+                #4A4A4A 5px,
+                #3d3d3d 5px,
+                #3d3d3d 10px
+            );
+        }
+        .little-bug {
+            animation: bug-bounce 3s infinite;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        .shake {
+            animation: shake 0.5s;
+        }
+        .shame-box {
+            animation: fadeInShame 2s;
+        }
+        .bug-dance {
+            animation: dance 1s infinite;
+        }
+        .timer-pulse {
+            animation: pulse 1s infinite alternate;
+        }
+        
+        @keyframes bug-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+        
+        @keyframes fadeInShame {
+            0% { opacity: 0; transform: scale(0.5); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes dance {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-5deg); }
+            50% { transform: rotate(0deg); }
+            75% { transform: rotate(5deg); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.05); }
+        }
+        
+        .modal {
+            transition: all 0.3s ease;
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.8);
+        }
+        
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1);
+        }
+        
+        .timer-display {
+            font-size: 4rem;
+            line-height: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .timer-display {
+                font-size: 3rem;
+            }
+        }
+        
+        .progress-bar {
+            height: 20px;
+            background-color: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            transition: width 0.5s ease;
+        }
+        
+        .pomodoro-counter {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+        
+        .pomodoro-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: #d1d5db;
+        }
+        
+        .pomodoro-dot.completed {
+            background-color: #ef4444;
+        }
+        
+        .challenge-card {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .work-mode {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+        }
+        
+        .break-mode {
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+        }
+        
+        .big-break-mode {
+            background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+        }
+    </style>
+</head>
+<body class="retro-font text-gray-800 flex flex-col min-h-screen">
+    <!-- Header -->
+    <header class="bg-green-700 p-4 border-b-4 border-green-500">
+        <div class="container mx-auto flex flex-col md:flex-row items-center justify-between px-2">
+            <div class="flex items-center">
+                <i class="fa-solid fa-bug little-bug text-4xl text-white"></i>
+                <div class="ml-2 md:ml-4">
+                    <p class="text-xs sm:text-sm md:text-base lg:text-lg text-white italic">Little Bug's</p>
+                    <h1 class="text-base sm:text-lg md:text-xl lg:text-2xl text-white">
+                        POMODORO TIMER
+                    </h1>
+                </div>
+            </div>
+            <!-- Puntos -->
+            <div class="flex items-center mt-3 md:mt-0">
+                <div class="p-1 sm:p-2 pixel-border-yellow bg-yellow-100 text-gray-800 flex items-center text-xs sm:text-base">
+                    <span class="mr-1 sm:mr-2">🏆</span>
+                    <span id="contador-puntos" class="font-bold">0</span>
+                    <span class="ml-1">Puntos</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sección Principal - Pomodoro Timer -->
+    <main class="flex-grow container mx-auto px-2 sm:px-4 py-4 sm:py-8 mb-4 md:mb-0">
+        <div class="max-w-3xl mx-auto bg-gray-800 text-white p-4 sm:p-6 pixel-border fade-in text-xs sm:text-sm">
+            <!-- Timer Display -->
+            <div id="timer-container" class="work-mode p-6 rounded-lg mb-6 transition-all duration-500">
+                <div class="text-center">
+                    <h2 id="timer-mode" class="text-xl md:text-2xl mb-2">¡HORA DE TRABAJAR!</h2>
+                    <p id="timer-instruction" class="mb-4">¡Enfócate en una sola tarea! ¡Tú puedes!</p>
+                    <div id="timer-display" class="timer-display text-green-400 mb-4">25:00</div>
+                    
+                    <div class="progress-bar mb-4">
+                        <div id="progress-fill" class="progress-fill" style="width: 100%"></div>
+                    </div>
+                    
+                    <div class="pomodoro-counter">
+                        <div class="pomodoro-dot"></div>
+                        <div class="pomodoro-dot"></div>
+                        <div class="pomodoro-dot"></div>
+                        <div class="pomodoro-dot"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Botones de control -->
+            <div class="flex justify-center gap-4 flex-wrap">
+                <button id="start-btn" class="pixel-border bg-green-500 text-white px-4 py-2 sm:px-6 sm:py-3 transition-all btn-hover flex items-center justify-center">
+                    <i class="fas fa-play mr-2"></i> EMPEZAR
+                </button>
+                <button id="pause-btn" class="pixel-border-yellow bg-yellow-500 text-gray-800 px-4 py-2 sm:px-6 sm:py-3 transition-all btn-hover-yellow flex items-center justify-center" disabled>
+                    <i class="fas fa-pause mr-2"></i> PAUSAR
+                </button>
+                <button id="skip-btn" class="pixel-border-red bg-red-500 text-white px-4 py-2 sm:px-6 sm:py-3 transition-all btn-hover-red flex items-center justify-center">
+                    <i class="fas fa-forward mr-2"></i> SALTAR
+                </button>
+                <button id="reset-btn" class="pixel-border-blue bg-blue-500 text-white px-4 py-2 sm:px-6 sm:py-3 transition-all btn-hover-blue flex items-center justify-center">
+                    <i class="fas fa-redo mr-2"></i> REINICIAR
+                </button>
+            </div>
+            
+            
+            <!-- Configuración -->
+            <div class="mt-8 pixel-border bg-gray-100 p-4">
+                <h3 class="text-lg text-gray-800 font-bold mb-3">CONFIGURACIÓN</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-gray-700 mb-1">Trabajo (min)</label>
+                        <input type="number" id="work-time" min="1" max="60" value="25" class="w-full p-2 bg-white border-2 border-green-500 text-gray-800">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-700 mb-1">Descanso (min)</label>
+                        <input type="number" id="break-time" min="1" max="30" value="5" class="w-full p-2 bg-white border-2 border-green-500 text-gray-800">
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de Reglas -->
+    <div id="modal-reglas" class="modal fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 p-6 pixel-border max-w-md w-full">
+            <h2 class="text-xl md:text-2xl mb-4 text-center text-yellow-400">REGLAS DEL POMODORO</h2>
+            <div class="mb-4 text-white">
+                <p class="mb-2">1. Trabaja enfocado durante 25 minutos (ajustable)</p>
+                <p class="mb-2">2. Toma un descanso de 5 minutos después de cada pomodoro</p>
+<p class="mb-2">3. Cada 4 pomodoros, toma un descanso largo</p>
+                <p class="mb-2">4. ¡Completa los desafíos de descanso para ganar puntos extra!</p>
+                <p class="mb-2">5. ¡No hagas trampa! (a menos que sea épico)</p>
+            </div>
+            <button id="cerrar-reglas" class="pixel-border bg-green-500 text-white px-4 py-2 w-full">
+                ENTENDIDO
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Logro -->
+    <div id="modal-logro" class="modal fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 p-6 pixel-border max-w-md w-full">
+            <div class="flex justify-center mb-4">
+                <i class="fas fa-trophy text-5xl text-yellow-400"></i>
+            </div>
+            <h2 class="text-xl md:text-2xl mb-2 text-center text-green-400" id="logro-titulo">¡LOGRO DESBLOQUEADO!</h2>
+            <p class="mb-4 text-center text-white" id="logro-descripcion">Has completado tu primer Pomodoro</p>
+            <div class="text-center text-yellow-300 mb-4">
+                <i class="fas fa-star mr-1"></i>
+                <i class="fas fa-star mr-1"></i>
+                <i class="fas fa-star"></i>
+            </div>
+            <button id="cerrar-logro" class="pixel-border bg-green-500 text-white px-4 py-2 w-full">
+                ¡ÉPICO!
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Desafío -->
+    <div id="modal-desafio" class="modal fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 p-6 pixel-border max-w-md w-full">
+            <h2 class="text-xl md:text-2xl mb-4 text-center text-yellow-400">¡DESAFÍO DE DESCANSO!</h2>
+            <p id="modal-desafio-text" class="mb-4 text-center text-white">¡Haz 5 saltos de estrella! 🌟</p>
+            <button id="modal-desafio-complete-btn" class="pixel-border bg-green-500 text-white px-4 py-2 w-full">
+                <i class="fas fa-check mr-2"></i> COMPLETAR DESAFÍO
+            </button>
+        </div>
+    </div>
+
+    <!-- Pie de página -->
+    <footer class="bg-gray-900 p-2 sm:p-4 border-t-4 border-green-500 mt-auto">
+        <div class="container mx-auto flex flex-col sm:flex-row justify-between items-center">
+            <p class="mb-2 sm:mb-0 text-center text-white text-xs sm:text-sm">
+            <span class="text-center flex flex-col">
+                <span>© 2025 Little Bug Games</span>
+                <span>¡Productividad con estilo!</span>
+            </span>
+            </p>
+            <button id="reglas-btn" class="pixel-border bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 sm:px-6 sm:py-3 transition-all btn-hover flex items-center justify-center text-xs sm:text-base mt-2 sm:mt-0">
+                <i class="fas fa-book mr-2"></i> REGLAS DEL JUEGO
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        // Elementos del DOM
+        const timerDisplay = document.getElementById('timer-display');
+        const timerMode = document.getElementById('timer-mode');
+        const timerInstruction = document.getElementById('timer-instruction');
+        const progressFill = document.getElementById('progress-fill');
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const skipBtn = document.getElementById('skip-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const modalDesafio = document.getElementById('modal-desafio');
+        const modalDesafioText = document.getElementById('modal-desafio-text');
+        const modalDesafioCompleteBtn = document.getElementById('modal-desafio-complete-btn');
+        const puntosElement = document.getElementById('contador-puntos');
+        const modalReglas = document.getElementById('modal-reglas');
+        const cerrarReglas = document.getElementById('cerrar-reglas');
+        const reglasBtn = document.getElementById('reglas-btn');
+        const modalLogro = document.getElementById('modal-logro');
+        const cerrarLogro = document.getElementById('cerrar-logro');
+        const logroTitulo = document.getElementById('logro-titulo');
+        const logroDescripcion = document.getElementById('logro-descripcion');
+        const timerContainer = document.getElementById('timer-container');
+        const workTimeInput = document.getElementById('work-time');
+        const breakTimeInput = document.getElementById('break-time');
+        
+        // Variables de estado
+        let timer;
+        let isRunning = false;
+        let isPaused = false;
+        let currentMode = 'work'; // 'work', 'break', 'longBreak'
+        let timeLeft;
+        let totalTime;
+        let pomodoroCount = 0;
+        let puntos = 0;
+        let achievements = [];
+        let audioContext;
+        
+        // Desafíos para los descansos
+        const challenges = [
+            "¡Haz 5 saltos de estrella! 🌟",
+            "¡Baila como nadie te está viendo! 💃",
+            "¡Toma un vaso de agua! 💧",
+            "¡Haz 10 saltos! 🦘",
+            "¡Respira profundamente 3 veces! 🌬️",
+            "¡Estírate como un gato! 🐱",
+            "¡Di algo gracioso en voz alta! 🤣",
+            "¡Mira por la ventana y encuentra algo verde! 🌳",
+            "¡Haz un dibujo rápido de un bug! 🐞",
+            "¡Imita a tu personaje favorito! 🦸"
+        ];
+        
+        // Logros
+        const allAchievements = [
+            { id: 'first-pomodoro', title: '¡Primer Pomodoro!', description: 'Completaste tu primera sesión de trabajo', points: 10, earned: false },
+            { id: 'five-pomodoros', title: 'Máquina de Productividad', description: 'Completaste 5 Pomodoros', points: 25, earned: false },
+            { id: 'challenge-master', title: 'Maestro de Desafíos', description: 'Completaste 5 desafíos de descanso', points: 30, earned: false },
+            { id: 'streak-3', title: 'Racha de 3 Días', description: 'Usaste el Pomodoro 3 días seguidos', points: 50, earned: false },
+            { id: 'focus-monster', title: 'Monstruo del Enfoque', description: 'Completaste 10 Pomodoros sin pausar', points: 100, earned: false }
+        ];
+        
+        // Inicializar el temporizador
+        function initTimer() {
+            // Cargar datos desde localStorage
+            loadFromLocalStorage();
+            
+            // Configurar el primer modo
+            setupMode('work');
+            
+            // Actualizar puntos
+            puntosElement.textContent = puntos;
+            
+            // Actualizar contador de Pomodoros
+            updatePomodoroCounter();
+            
+            // Crear contexto de audio
+            if (typeof window.AudioContext !== 'undefined' || typeof window.webkitAudioContext !== 'undefined') {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        
+        // Configurar modo actual
+        function setupMode(mode) {
+            currentMode = mode;
+            
+            if (mode === 'work') {
+                totalTime = parseInt(workTimeInput.value) * 60;
+                timerMode.textContent = '¡HORA DE TRABAJAR!';
+                timerInstruction.textContent = '¡Enfócate en una sola tarea! ¡Tú puedes!';
+                timerContainer.className = 'work-mode p-6 rounded-lg mb-6 transition-all duration-500';
+            } 
+            else if (mode === 'break') {
+                totalTime = parseInt(breakTimeInput.value) * 60;
+                timerMode.textContent = '¡DESCANSO CORTO!';
+                timerInstruction.textContent = '¡Levántate y muévete!';
+                timerContainer.className = 'break-mode p-6 rounded-lg mb-6 transition-all duration-500';
+                
+                // Mostrar un desafío aleatorio
+                showRandomChallenge();
+            }
+else if (mode === 'longBreak') {
+    totalTime = (parseInt(breakTimeInput.value) * 2) * 60;
+    timerMode.textContent = '¡DESCANSO LARGO!';
+    timerInstruction.textContent = '¡Tómate un buen descanso, te lo has ganado!';
+    timerContainer.className = 'big-break-mode p-6 rounded-lg mb-6 transition-all duration-500';
+    
+    // Mostrar un desafío aleatorio
+    showRandomChallenge();
+}
+            
+            timeLeft = totalTime;
+            updateDisplay();
+            updateProgressBar();
+        }
+        
+        // Mostrar desafío aleatorio
+        function showRandomChallenge() {
+            const randomIndex = Math.floor(Math.random() * challenges.length);
+            modalDesafioText.textContent = challenges[randomIndex];
+            modalDesafio.classList.add('active');
+        }
+        
+        // Completar desafío
+        function completeChallenge() {
+            puntos += 5;
+            puntosElement.textContent = puntos;
+            saveToLocalStorage();
+            
+            // Animación
+            puntosElement.classList.add('points-animation');
+            setTimeout(() => {
+                puntosElement.classList.remove('points-animation');
+            }, 800);
+            
+            modalDesafio.classList.remove('active');
+        }
+        
+        // Iniciar temporizador
+        function startTimer() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            isPaused = false;
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            
+            timer = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+                updateProgressBar();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    isRunning = false;
+                    startBtn.disabled = false;
+                    pauseBtn.disabled = true;
+                    
+                    // Sonido de alarma
+                    playAlarmSound();
+                    
+                    // Manejar final del temporizador
+                    handleTimerEnd();
+                }
+            }, 1000);
+        }
+        
+        // Pausar temporizador
+        function pauseTimer() {
+            if (!isRunning) return;
+            
+            clearInterval(timer);
+            isRunning = false;
+            isPaused = true;
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            startBtn.innerHTML = '<i class="fas fa-play mr-2"></i> CONTINUAR';
+        }
+        
+        // Saltar temporizador
+        function skipTimer() {
+            clearInterval(timer);
+            isRunning = false;
+            isPaused = false;
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            startBtn.innerHTML = '<i class="fas fa-play mr-2"></i> EMPEZAR';
+            
+            handleTimerEnd();
+        }
+        
+        // Reiniciar temporizador
+        function resetTimer() {
+            clearInterval(timer);
+            isRunning = false;
+            isPaused = false;
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            startBtn.innerHTML = '<i class="fas fa-play mr-2"></i> EMPEZAR';
+            
+            setupMode(currentMode);
+        }
+        
+        // Manejar final del temporizador
+        function handleTimerEnd() {
+            if (currentMode === 'work') {
+                pomodoroCount++;
+                puntos += 10;
+                puntosElement.textContent = puntos;
+                
+                // Animación de puntos
+                puntosElement.classList.add('points-animation');
+                setTimeout(() => {
+                    puntosElement.classList.remove('points-animation');
+                }, 800);
+                
+                // Actualizar contador de Pomodoros
+                updatePomodoroCounter();
+                
+                // Verificar logros
+                checkAchievements();
+                
+                // Configurar el siguiente modo
+                if (pomodoroCount % 4 === 0) {
+                    setupMode('longBreak');
+                } else {
+                    setupMode('break');
+                }
+            } else {
+                // Volver al modo de trabajo después del descanso
+                setupMode('work');
+            }
+            
+            saveToLocalStorage();
+        }
+        
+        // Actualizar visualización
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Animación cuando quedan 10 segundos
+            if (timeLeft <= 10 && isRunning) {
+                timerDisplay.classList.add('timer-pulse', 'text-red-500');
+            } else {
+                timerDisplay.classList.remove('timer-pulse', 'text-red-500');
+                timerDisplay.classList.add('text-green-400');
+            }
+        }
+        
+        // Actualizar barra de progreso
+        function updateProgressBar() {
+            const percentage = (timeLeft / totalTime) * 100;
+            progressFill.style.width = `${percentage}%`;
+        }
+        
+        // Actualizar contador de Pomodoros
+        function updatePomodoroCounter() {
+            const dots = document.querySelectorAll('.pomodoro-dot');
+            dots.forEach((dot, index) => {
+                if (index < pomodoroCount % 4) {
+                    dot.classList.add('completed');
+                } else {
+                    dot.classList.remove('completed');
+                }
+            });
+        }
+        
+        // Verificar logros
+        function checkAchievements() {
+            allAchievements.forEach(achievement => {
+                if (!achievement.earned) {
+                    let earned = false;
+                    
+                    switch(achievement.id) {
+                        case 'first-pomodoro':
+                            earned = pomodoroCount >= 1;
+                            break;
+                        case 'five-pomodoros':
+                            earned = pomodoroCount >= 5;
+                            break;
+                        case 'challenge-master':
+                            // Este se manejaría con un contador separado
+                            break;
+                        case 'streak-3':
+                            // Requeriría seguimiento diario
+                            break;
+                        case 'focus-monster':
+                            // Requeriría seguimiento de sesiones sin pausa
+                            break;
+                    }
+                    
+                    if (earned) {
+                        achievement.earned = true;
+                        puntos += achievement.points;
+                        puntosElement.textContent = puntos;
+                        showAchievement(achievement);
+                    }
+                }
+            });
+        }
+        
+        // Mostrar logro
+        function showAchievement(achievement) {
+            logroTitulo.textContent = achievement.title;
+            logroDescripcion.textContent = achievement.description;
+            modalLogro.classList.add('active');
+        }
+        
+        // Reproducir sonido de alarma usando Web Audio API
+        function playAlarmSound() {
+            if (!audioContext) {
+                // Crear contexto de audio si no existe
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            // Crear un oscilador
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            // Configurar el oscilador
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // 800 Hz
+            
+            // Configurar el nodo de ganancia para controlar el volumen
+            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+            
+            // Conectar los nodos
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Programar el sonido
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.5); // 0.5 segundos de duración
+            
+            // Si el contexto está suspendido (por políticas de autoplay), intentar reanudarlo
+            if (audioContext.state === 'suspended') {
+                audioContext.resume().then(() => {
+                    console.log('AudioContext reanudado exitosamente');
+                });
+            }
+        }
+
+        // Cargar desde localStorage
+        function loadFromLocalStorage() {
+            if (localStorage.getItem('puntosPomodoro')) {
+                puntos = parseInt(localStorage.getItem('puntosPomodoro'));
+            }
+            if (localStorage.getItem('pomodoroCount')) {
+                pomodoroCount = parseInt(localStorage.getItem('pomodoroCount'));
+            }
+        }
+        
+        // Guardar en localStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('puntosPomodoro', puntos);
+            localStorage.setItem('pomodoroCount', pomodoroCount);
+        }
+        
+        // Event Listeners
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', pauseTimer);
+        skipBtn.addEventListener('click', skipTimer);
+        resetBtn.addEventListener('click', resetTimer);
+        modalDesafioCompleteBtn.addEventListener('click', completeChallenge);
+        reglasBtn.addEventListener('click', () => {
+            modalReglas.classList.add('active');
+        });
+        cerrarReglas.addEventListener('click', () => {
+            modalReglas.classList.remove('active');
+        });
+        cerrarLogro.addEventListener('click', () => {
+            modalLogro.classList.remove('active');
+        });
+        
+        // Permitir actualizar tiempos sobre la marcha
+        workTimeInput.addEventListener('change', () => {
+            if (currentMode === 'work' && !isRunning) {
+                setupMode('work');
+            }
+        });
+        
+        breakTimeInput.addEventListener('change', () => {
+            if ((currentMode === 'break' || currentMode === 'longBreak') && !isRunning) {
+                setupMode(currentMode);
+            }
+        });
+        
+        
+        // Inicializar el juego
+        document.addEventListener('DOMContentLoaded', () => {
+            initTimer();
+        });
+    </script>
+</body>
+</html>
