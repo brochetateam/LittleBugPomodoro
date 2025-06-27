@@ -1,5 +1,45 @@
-<!DOCTYPE html>
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,89 +51,109 @@
         .retro-font {
             font-family: 'Press Start 2P', cursive;
         }
+
         .pixel-border {
             border: 4px solid #28A745;
             border-radius: 0;
             box-shadow: 5px 5px 0 #1a682c;
         }
+
         .pixel-border-red {
             border: 4px solid #E94560;
             box-shadow: 5px 5px 0 #a32e43;
         }
+
         .pixel-border-yellow {
             border: 4px solid #FFC107;
             box-shadow: 5px 5px 0 #b18705;
         }
+
         .pixel-border-blue {
             border: 4px solid #3B82F6;
             box-shadow: 5px 5px 0 #1d4ed8;
         }
+
         .btn-hover:hover {
             transform: translate(2px, 2px);
             box-shadow: 3px 3px 0 #1a682c;
         }
+
         .btn-hover-red:hover {
             transform: translate(2px, 2px);
             box-shadow: 3px 3px 0 #a32e43;
         }
+
         .btn-hover-yellow:hover {
             transform: translate(2px, 2px);
             box-shadow: 3px 3px 0 #b18705;
         }
+
         .btn-hover-blue:hover {
             transform: translate(2px, 2px);
             box-shadow: 3px 3px 0 #1d4ed8;
         }
-        
-        /* Hide scrollbar while allowing scrolling */
+
         body::-webkit-scrollbar {
             display: none;
         }
-        
+
         body {
             -ms-overflow-style: none;
             scrollbar-width: none;
             background-color: #f3f4f6;
         }
-        
+
         .pixel-background {
-            background: repeating-linear-gradient(
-                45deg,
-                #4A4A4A,
-                #4A4A4A 5px,
-                #3d3d3d 5px,
-                #3d3d3d 10px
-            );
+            background: repeating-linear-gradient(45deg,
+                    #4A4A4A,
+                    #4A4A4A 5px,
+                    #3d3d3d 5px,
+                    #3d3d3d 10px);
         }
+
         .little-bug {
             animation: bug-bounce 3s infinite;
         }
+
         .fade-in {
             animation: fadeIn 0.5s ease-in;
         }
+
         .shake {
             animation: shake 0.5s;
         }
+
         .shame-box {
             animation: fadeInShame 2s;
         }
+
         .bug-dance {
             animation: dance 1s infinite;
         }
+
         .timer-pulse {
             animation: pulse 1s infinite alternate;
         }
-        
+
         @keyframes bug-bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
         }
-        
+
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
         }
-        
+
         @keyframes shake {
             0% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
@@ -101,121 +161,115 @@
             75% { transform: translateX(-5px); }
             100% { transform: translateX(0); }
         }
-        
+
         @keyframes fadeInShame {
             0% { opacity: 0; transform: scale(0.5); }
             100% { opacity: 1; transform: scale(1); }
         }
-        
+
         @keyframes dance {
             0%, 100% { transform: rotate(0deg); }
             25% { transform: rotate(-5deg); }
             50% { transform: rotate(0deg); }
             75% { transform: rotate(5deg); }
         }
-        
+
         @keyframes pulse {
             0% { transform: scale(1); }
             100% { transform: scale(1.05); }
         }
-        
+
         .modal {
             transition: all 0.3s ease;
             opacity: 0;
             visibility: hidden;
             transform: scale(0.8);
         }
-        
+
         .modal.active {
             opacity: 1;
             visibility: visible;
             transform: scale(1);
         }
-        
+
         .timer-display {
             font-size: 4rem;
             line-height: 1;
         }
-        
+
         @media (max-width: 768px) {
             .timer-display {
                 font-size: 3rem;
             }
         }
-        
+
         .progress-bar {
             height: 20px;
             background-color: #e5e7eb;
             border-radius: 10px;
             overflow: hidden;
         }
-        
+
         .progress-fill {
             height: 100%;
             background: linear-gradient(90deg, #4CAF50, #8BC34A);
             transition: width 0.5s ease;
         }
-        
+
         .pomodoro-counter {
             display: flex;
             gap: 4px;
             justify-content: center;
             margin-top: 1rem;
         }
-        
+
         .pomodoro-dot {
             width: 16px;
             height: 16px;
             border-radius: 50%;
             background-color: #d1d5db;
         }
-        
+
         .pomodoro-dot.completed {
             background-color: #ef4444;
         }
-        
-        .challenge-card {
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
+
         .work-mode {
             background: linear-gradient(135deg, #fef3c7, #fde68a);
         }
-        
+
         .break-mode {
             background: linear-gradient(135deg, #dbeafe, #bfdbfe);
         }
-        
+
         .big-break-mode {
             background: linear-gradient(135deg, #ede9fe, #ddd6fe);
         }
 
-        /* 7-Segment Display Styles */
+        /* Seven-Segment Display Styles with Size Variable */
         .seven-segment-display {
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 10px;
+            /* Variable to control clock size */
+            --clock-scale: 1.5; /* Adjust this value to change clock size (default increased for larger clock) */
         }
 
         .digit {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            grid-gap: 3px;
-            width: 40px;
-            height: 70px;
+            grid-template-rows: repeat(5, 1fr);
+            grid-gap: calc(3px * var(--clock-scale));
+            width: calc(40px * var(--clock-scale));
+            height: calc(70px * var(--clock-scale));
             position: relative;
         }
 
         .segment {
             background-color: #333;
             opacity: 0.2;
-            border-radius: 2px;
+            border-radius: calc(2px * var(--clock-scale));
             transition: opacity 0.3s ease;
         }
 
@@ -233,42 +287,43 @@
         .segment.g { grid-area: 3 / 1 / 4 / 4; }
 
         .colon {
-            font-size: 2rem;
+            font-size: calc(2rem * var(--clock-scale));
             color: #4CAF50;
-            padding: 0 5px;
+            padding: calc(5px * var(--clock-scale));
         }
 
         @media (max-width: 768px) {
             .digit {
-                width: 30px;
-                height: 50px;
+                width: calc(30px * var(--clock-scale));
+                height: calc(50px * var(--clock-scale));
             }
-            
             .colon {
-                font-size: 1.5rem;
+                font-size: calc(1.5rem * var(--clock-scale));
             }
         }
     </style>
 </head>
+
 <body class="retro-font text-gray-800 flex flex-col min-h-screen">
     <!-- Header -->
     <header class="bg-green-700 p-4 border-b-4 border-green-500">
         <div class="container mx-auto flex flex-col md:flex-row items-center justify-between px-2">
             <div class="flex items-center">
                 <i class="fa-solid fa-bug little-bug text-4xl text-white"></i>
-                <div class="ml-2 md:ml-4">
-                    <p class="text-xs sm:text-sm md:text-base lg:text-lg text-white italic">Little Bug's</p>
-                    <h1 class="text-base sm:text-lg md:text-xl lg:text-2xl text-white">
-                        POMODORO TIMER
-                    </h1>
+                <div class="ml Facade as HTML element
+                    <div class="ml-2 md:ml-4">
+                        <p class="text-xs sm:text-sm md:text-base lg:text-lg text-white italic">Little Bug's</p>
+                        <h1 class="text-base sm:text-lg md:text-xl lg:text-2xl text-white">
+                            POMODORO TIMER
+                        </h1>
+                    </div>
                 </div>
-            </div>
-            <!-- Puntos -->
-            <div class="flex items-center mt-3 md:mt-0">
-                <div class="p-1 sm:p-2 pixel-border-yellow bg-yellow-100 text-gray-800 flex items-center text-xs sm:text-base">
-                    <span class="mr-1 sm:mr-2">🏆</span>
-                    <span id="contador-puntos" class="font-bold">0</span>
-                    <span class="ml-1">Puntos</span>
+                <div class="flex items-center mt-3 md:mt-0">
+                    <div class="p-1 sm:p-2 pixel-border-yellow bg-yellow-100 text-gray-800 flex items-center text-xs sm:text-base">
+                        <span class="mr-1 sm:mr-2">🏆</span>
+                        <span id="contador-puntos" class="font-bold">0</span>
+                        <span class="ml-1">Puntos</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -278,65 +333,63 @@
     <main class="flex-grow container mx-auto px-2 sm:px-4 py-4 sm:py-8 mb-4 md:mb-0">
         <div class="max-w-3xl mx-auto bg-gray-800 text-white p-4 sm:p-6 pixel-border fade-in text-xs sm:text-sm">
             <!-- Timer Display -->
-            <div id="timer-container" class="work-mode p-6 rounded-lg mb-6 transition-all duration-500">
-                <div class="text-center">
-                    <h2 id="timer-mode" class="text-xl md:text-2xl mb-2">¡HORA DE TRABAJAR!</h2>
-                    <p id="timer-instruction" class="mb-4">¡Enfócate en una sola tarea! ¡Tú puedes!</p>
-        <div id="timer-display" class="seven-segment-display text-green-400 mb-4">
-            <div class="digit" id="digit-min1">
-                <div class="segment a"></div>
-                <div class="segment b"></div>
-                <div class="segment c"></div>
-                <div class="segment d"></div>
-                <div class="segment e"></div>
-                <div class="segment f"></div>
-                <div class="segment g"></div>
-            </div>
-            <div class="digit" id="digit-min2">
-                <div class="segment a"></div>
-                <div class="segment b"></div>
-                <div class="segment c"></div>
-                <div class="segment d"></div>
-                <div class="segment e"></div>
-                <div class="segment f"></div>
-                <div class="segment g"></div>
-            </div>
-            <div class="colon">:</div>
-            <div class="digit" id="digit-sec1">
-                <div class="segment a"></div>
-                <div class="segment b"></div>
-                <div class="segment c"></div>
-                <div class="segment d"></div>
-                <div class="segment e"></div>
-                <div class="segment f"></div>
-                <div class="segment g"></div>
-            </div>
-            <div class="digit" id="digit-sec2">
-                <div class="segment a"></div>
-                <div class="segment b"></div>
-                <div class="segment c"></div>
-                <div class="segment d"></div>
-                <div class="segment e"></div>
-                <div class="segment f"></div>
-                <div class="segment g"></div>
-            </div>
-        </div>
-                    
-                    <div class="progress-bar mb-4">
-                        <div id="progress-fill" class="progress-fill" style="width: 100%"></div>
-                    </div>
-                    
-                    <div class="pomodoro-counter">
-                        <div class="pomodoro-dot"></div>
-                        <div class="pomodoro-dot"></div>
-                        <div class="pomodoro-dot"></div>
-                        <div class="pomodoro-dot"></div>
+            <div class="text-center mb-6">
+                <h2 id="timer-mode" class="text-xl md:text-2xl mb-2">¡HORA DE TRABAJAR!</h2>
+                <p id="timer-instruction" class="mb-4">¡Enfócate en una sola tarea! ¡Tú puedes!</p>
+                <div id="timer-container" class="work-mode p-4 rounded-lg inline-block pixel-border mx-auto">
+                    <div id="timer-display" class="seven-segment-display text-green-400">
+                        <div class="digit" id="digit-min1">
+                            <div class="segment a"></div>
+                            <div class="segment b"></div>
+                            <div class="segment c"></div>
+                            <div class="segment d"></div>
+                            <div class="segment e"></div>
+                            <div class="segment f"></div>
+                            <div class="segment g"></div>
+                        </div>
+                        <div class="digit" id="digit-min2">
+                            <div class="segment a"></div>
+                            <div class="segment b"></div>
+                            <div class="segment c"></div>
+                            <div class="segment d"></div>
+                            <div class="segment e"></div>
+                            <div class="segment f"></div>
+                            <div class="segment g"></div>
+                        </div>
+                        <div class="colon">:</div>
+                        <div class="digit" id="digit-sec1">
+                            <div class="segment a"></div>
+                            <div class="segment b"></div>
+                            <div class="segment c"></div>
+                            <div class="segment d"></div>
+                            <div class="segment e"></div>
+                            <div class="segment f"></div>
+                            <div class="segment g"></div>
+                        </div>
+                        <div class="digit" id="digit-sec2">
+                            <div class="segment a"></div>
+                            <div class="segment b"></div>
+                            <div class="segment c"></div>
+                            <div class="segment d"></div>
+                            <div class="segment e"></div>
+                            <div class="segment f"></div>
+                            <div class="segment g"></div>
+                        </div>
                     </div>
                 </div>
+                <div class="progress-bar mt-4 mx-auto w-3/4">
+                    <div id="progress-fill" class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="pomodoro-counter mt-4">
+                    <div class="pomodoro-dot"></div>
+                    <div class="pomodoro-dot"></div>
+                    <div class="pomodoro-dot"></div>
+                    <div class="pomodoro-dot"></div>
+                </div>
             </div>
-            
+
             <!-- Botones de control -->
-            <div class="flex justify-center gap-4 flex-wrap">
+            <div class="flex justify-center gap-4 flex-wrap mb-6">
                 <button id="start-btn" class="pixel-border bg-green-500 text-white px-4 py-2 sm:px-6 sm:py-3 transition-all btn-hover flex items-center justify-center">
                     <i class="fas fa-play mr-2"></i> EMPEZAR
                 </button>
@@ -349,28 +402,32 @@
                 <button id="reset-btn" class="pixel-border-blue bg-blue-500 text-white px-4 py-2 sm:px-6 sm:py-3 transition-all btn-hover-blue flex items-center justify-center">
                     <i class="fas fa-redo mr-2"></i> REINICIAR
                 </button>
-            </div>
-            
-            
-            <!-- Configuración -->
-            <div class="mt-8 pixel-border bg-gray-100 p-4">
-                <h3 class="text-lg text-gray-800 font-bold mb-3">CONFIGURACIÓN</h3>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-gray-700 mb-1">Trabajo (min)</label>
-                        <input type="number" id="work-time" min="1" max="60" value="25" class="w-full p-2 bg-white border-2 border-green-500 text-gray-800">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-gray-700 mb-1">Descanso (min)</label>
-                        <input type="number" id="break-time" min="1" max="30" value="5" class="w-full p-2 bg-white border-2 border-green-500 text-gray-800">
-                    </div>
-                    
-                </div>
+                <button id="settings-btn" class="pixel-border bg-purple-600 text-white px-4 py-2 sm:px-6 sm:py-3 transition-all btn-hover flex items-center justify-center">
+                    <i class="fas fa-cog mr-2"></i> AJUSTES
+                </button>
             </div>
         </div>
     </main>
+
+    <!-- Modal de Configuración -->
+    <div id="modal-config" class="modal fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 p-6 pixel-border max-w-md w-full">
+            <h2 class="text-xl md:text-2xl mb-4 text-center text-yellow-400">AJUSTES</h2>
+            <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <label class="block text-gray-700 mb-1 text-white">Trabajo (min)</label>
+                    <input type="number" id="work-time" min="1" max="60" value="25" class="w-full p-2 bg-white border-2 border-green-500 text-gray-800">
+                </div>
+                <div>
+                    <label class="block text-gray-700 mb-1 text-white">Descanso (min)</label>
+                    <input type="number" id="break-time" min="1" max="30" value="5" class="w-full p-2 bg-white border-2 border-green-500 text-gray-800">
+                </div>
+            </div>
+            <button id="cerrar-config" class="pixel-border bg-green-500 text-white px-4 py-2 w-full mt-4">
+                GUARDAR
+            </button>
+        </div>
+    </div>
 
     <!-- Modal de Reglas -->
     <div id="modal-reglas" class="modal fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
@@ -379,7 +436,7 @@
             <div class="mb-4 text-white">
                 <p class="mb-2">1. Trabaja enfocado durante 25 minutos (ajustable)</p>
                 <p class="mb-2">2. Toma un descanso de 5 minutos después de cada pomodoro</p>
-<p class="mb-2">3. Cada 4 pomodoros, toma un descanso largo</p>
+                <p class="mb-2">3. Cada 4 pomodoros, toma un descanso largo</p>
                 <p class="mb-2">4. ¡Completa los desafíos de descanso para ganar puntos extra!</p>
                 <p class="mb-2">5. ¡No hagas trampa! (a menos que sea épico)</p>
             </div>
@@ -413,8 +470,11 @@
         <div class="bg-gray-800 p-6 pixel-border max-w-md w-full">
             <h2 class="text-xl md:text-2xl mb-4 text-center text-yellow-400">¡DESAFÍO DE DESCANSO!</h2>
             <p id="modal-desafio-text" class="mb-4 text-center text-white">¡Haz 5 saltos de estrella! 🌟</p>
-            <button id="modal-desafio-complete-btn" class="pixel-border bg-green-500 text-white px-4 py-2 w-full">
+            <button id="modal-desafio-complete-btn" class="pixel-border bg-green-500 text-white px-4 py-2 w-full mb-2">
                 <i class="fas fa-check mr-2"></i> COMPLETAR DESAFÍO
+            </button>
+            <button id="modal-desafio-skip-btn" class="pixel-border-red bg-red-500 text-white px-4 py-2 w-full">
+                <i class="fas fa-forward mr-2"></i> SALTAR DESAFÍO
             </button>
         </div>
     </div>
@@ -423,10 +483,10 @@
     <footer class="bg-gray-900 p-2 sm:p-4 border-t-4 border-green-500 mt-auto">
         <div class="container mx-auto flex flex-col sm:flex-row justify-between items-center">
             <p class="mb-2 sm:mb-0 text-center text-white text-xs sm:text-sm">
-            <span class="text-center flex flex-col">
-                <span>© 2025 Little Bug Games</span>
-                <span>¡Productividad con estilo!</span>
-            </span>
+                <span class="text-center flex flex-col">
+                    <span>© 2025 Little Bug Games</span>
+                    <span>¡Productividad con estilo!</span>
+                </span>
             </p>
             <button id="reglas-btn" class="pixel-border bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 sm:px-6 sm:py-3 transition-all btn-hover flex items-center justify-center text-xs sm:text-base mt-2 sm:mt-0">
                 <i class="fas fa-book mr-2"></i> REGLAS DEL JUEGO
@@ -444,6 +504,9 @@
         const pauseBtn = document.getElementById('pause-btn');
         const skipBtn = document.getElementById('skip-btn');
         const resetBtn = document.getElementById('reset-btn');
+        const settingsBtn = document.getElementById('settings-btn');
+        const modalConfig = document.getElementById('modal-config');
+        const cerrarConfig = document.getElementById('cerrar-config');
         const modalDesafio = document.getElementById('modal-desafio');
         const modalDesafioText = document.getElementById('modal-desafio-text');
         const modalDesafioCompleteBtn = document.getElementById('modal-desafio-complete-btn');
@@ -458,20 +521,20 @@
         const timerContainer = document.getElementById('timer-container');
         const workTimeInput = document.getElementById('work-time');
         const breakTimeInput = document.getElementById('break-time');
-        
+
         // Variables de estado
         let timer;
         let isRunning = false;
         let isPaused = false;
-        let currentMode = 'work'; // 'work', 'break', 'longBreak'
+        let currentMode = 'work';
         let timeLeft;
         let totalTime;
         let pomodoroCount = 0;
         let puntos = 0;
         let achievements = [];
         let audioContext;
-        
-        // Desafíos para los descansos
+
+        // Desafíos
         const challenges = [
             "¡Haz 5 saltos de estrella! 🌟",
             "¡Baila como nadie te está viendo! 💃",
@@ -484,7 +547,7 @@
             "¡Haz un dibujo rápido de un bug! 🐞",
             "¡Imita a tu personaje favorito! 🦸"
         ];
-        
+
         // Logros
         const allAchievements = [
             { id: 'first-pomodoro', title: '¡Primer Pomodoro!', description: 'Completaste tu primera sesión de trabajo', points: 10, earned: false },
@@ -493,116 +556,88 @@
             { id: 'streak-3', title: 'Racha de 3 Días', description: 'Usaste el Pomodoro 3 días seguidos', points: 50, earned: false },
             { id: 'focus-monster', title: 'Monstruo del Enfoque', description: 'Completaste 10 Pomodoros sin pausar', points: 100, earned: false }
         ];
-        
+
         // Inicializar el temporizador
         function initTimer() {
-            // Cargar datos desde localStorage
             loadFromLocalStorage();
-            
-            // Configurar el primer modo
             setupMode('work');
-            
-            // Actualizar puntos
             puntosElement.textContent = puntos;
-            
-            // Actualizar contador de Pomodoros
             updatePomodoroCounter();
-            
-            // Crear contexto de audio
             if (typeof window.AudioContext !== 'undefined' || typeof window.webkitAudioContext !== 'undefined') {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
         }
-        
-        // Configurar modo actual
+
+        // Configurar modo
         function setupMode(mode) {
             currentMode = mode;
-            
             if (mode === 'work') {
                 totalTime = parseInt(workTimeInput.value) * 60;
                 timerMode.textContent = '¡HORA DE TRABAJAR!';
                 timerInstruction.textContent = '¡Enfócate en una sola tarea! ¡Tú puedes!';
-                timerContainer.className = 'work-mode p-6 rounded-lg mb-6 transition-all duration-500';
-            } 
-            else if (mode === 'break') {
+                timerContainer.className = 'work-mode p-4 rounded-lg inline-block pixel-border mx-auto';
+            } else if (mode === 'break') {
                 totalTime = parseInt(breakTimeInput.value) * 60;
                 timerMode.textContent = '¡DESCANSO CORTO!';
                 timerInstruction.textContent = '¡Levántate y muévete!';
-                timerContainer.className = 'break-mode p-6 rounded-lg mb-6 transition-all duration-500';
-                
-                // Mostrar un desafío aleatorio
+                timerContainer.className = 'break-mode p-4 rounded-lg inline-block pixel-border mx-auto';
+                showRandomChallenge();
+            } else if (mode === 'longBreak') {
+                totalTime = (parseInt(breakTimeInput.value) * 2) * 60;
+                timerMode.textContent = '¡DESCANSO LARGO!';
+                timerInstruction.textContent = '¡Tómate un buen descanso, te lo has ganado!';
+                timerContainer.className = 'big-break-mode p-4 rounded-lg inline-block pixel-border mx-auto';
                 showRandomChallenge();
             }
-else if (mode === 'longBreak') {
-    totalTime = (parseInt(breakTimeInput.value) * 2) * 60;
-    timerMode.textContent = '¡DESCANSO LARGO!';
-    timerInstruction.textContent = '¡Tómate un buen descanso, te lo has ganado!';
-    timerContainer.className = 'big-break-mode p-6 rounded-lg mb-6 transition-all duration-500';
-    
-    // Mostrar un desafío aleatorio
-    showRandomChallenge();
-}
-            
             timeLeft = totalTime;
             updateDisplay();
             updateProgressBar();
         }
-        
+
         // Mostrar desafío aleatorio
         function showRandomChallenge() {
             const randomIndex = Math.floor(Math.random() * challenges.length);
             modalDesafioText.textContent = challenges[randomIndex];
             modalDesafio.classList.add('active');
         }
-        
+
         // Completar desafío
         function completeChallenge() {
             puntos += 5;
             puntosElement.textContent = puntos;
             saveToLocalStorage();
-            
-            // Animación
             puntosElement.classList.add('points-animation');
             setTimeout(() => {
                 puntosElement.classList.remove('points-animation');
             }, 800);
-            
             modalDesafio.classList.remove('active');
         }
-        
+
         // Iniciar temporizador
         function startTimer() {
             if (isRunning) return;
-            
             isRunning = true;
             isPaused = false;
             startBtn.disabled = true;
             pauseBtn.disabled = false;
-            
             timer = setInterval(() => {
                 timeLeft--;
                 updateDisplay();
                 updateProgressBar();
-                
                 if (timeLeft <= 0) {
                     clearInterval(timer);
                     isRunning = false;
                     startBtn.disabled = false;
                     pauseBtn.disabled = true;
-                    
-                    // Sonido de alarma
                     playAlarmSound();
-                    
-                    // Manejar final del temporizador
                     handleTimerEnd();
                 }
             }, 1000);
         }
-        
+
         // Pausar temporizador
         function pauseTimer() {
             if (!isRunning) return;
-            
             clearInterval(timer);
             isRunning = false;
             isPaused = true;
@@ -610,7 +645,7 @@ else if (mode === 'longBreak') {
             pauseBtn.disabled = true;
             startBtn.innerHTML = '<i class="fas fa-play mr-2"></i> CONTINUAR';
         }
-        
+
         // Saltar temporizador
         function skipTimer() {
             clearInterval(timer);
@@ -619,10 +654,9 @@ else if (mode === 'longBreak') {
             startBtn.disabled = false;
             pauseBtn.disabled = true;
             startBtn.innerHTML = '<i class="fas fa-play mr-2"></i> EMPEZAR';
-            
             handleTimerEnd();
         }
-        
+
         // Reiniciar temporizador
         function resetTimer() {
             clearInterval(timer);
@@ -631,44 +665,33 @@ else if (mode === 'longBreak') {
             startBtn.disabled = false;
             pauseBtn.disabled = true;
             startBtn.innerHTML = '<i class="fas fa-play mr-2"></i> EMPEZAR';
-            
             setupMode(currentMode);
         }
-        
+
         // Manejar final del temporizador
         function handleTimerEnd() {
             if (currentMode === 'work') {
                 pomodoroCount++;
                 puntos += 10;
                 puntosElement.textContent = puntos;
-                
-                // Animación de puntos
                 puntosElement.classList.add('points-animation');
                 setTimeout(() => {
                     puntosElement.classList.remove('points-animation');
                 }, 800);
-                
-                // Actualizar contador de Pomodoros
                 updatePomodoroCounter();
-                
-                // Verificar logros
                 checkAchievements();
-                
-                // Configurar el siguiente modo
                 if (pomodoroCount % 4 === 0) {
                     setupMode('longBreak');
                 } else {
                     setupMode('break');
                 }
             } else {
-                // Volver al modo de trabajo después del descanso
                 setupMode('work');
             }
-            
             saveToLocalStorage();
         }
-        
-        // Mapa de segmentos para dígitos 0-9
+
+        // Mapa de segmentos para dígitos
         const digitMap = {
             0: ['a', 'b', 'c', 'd', 'e', 'f'],
             1: ['b', 'c'],
@@ -682,43 +705,29 @@ else if (mode === 'longBreak') {
             9: ['a', 'b', 'c', 'd', 'f', 'g']
         };
 
-        // Actualizar un dígito en el display
+        // Actualizar dígito
         function updateDigit(digitId, value) {
             const digitElement = document.getElementById(digitId);
             if (!digitElement) return;
-            
-            // Reset all segments
             const segments = digitElement.querySelectorAll('.segment');
-            segments.forEach(segment => {
-                segment.classList.remove('active');
-            });
-            
-            // Activate segments for this digit
+            segments.forEach(segment => segment.classList.remove('active'));
             const activeSegments = digitMap[value] || [];
             activeSegments.forEach(seg => {
                 const segment = digitElement.querySelector(`.${seg}`);
-                if (segment) {
-                    segment.classList.add('active');
-                }
+                if (segment) segment.classList.add('active');
             });
         }
-        
+
         // Actualizar visualización
         function updateDisplay() {
             const minutes = Math.floor(timeLeft / 60);
             const seconds = timeLeft % 60;
-            
-            // Convert to string with leading zeros
             const minStr = minutes.toString().padStart(2, '0');
             const secStr = seconds.toString().padStart(2, '0');
-            
-            // Update each digit
             updateDigit('digit-min1', parseInt(minStr[0]));
             updateDigit('digit-min2', parseInt(minStr[1]));
             updateDigit('digit-sec1', parseInt(secStr[0]));
             updateDigit('digit-sec2', parseInt(secStr[1]));
-            
-            // Animación cuando quedan 10 segundos
             if (timeLeft <= 10 && isRunning) {
                 timerDisplay.classList.add('timer-pulse', 'text-red-500');
             } else {
@@ -726,13 +735,13 @@ else if (mode === 'longBreak') {
                 timerDisplay.classList.add('text-green-400');
             }
         }
-        
+
         // Actualizar barra de progreso
         function updateProgressBar() {
             const percentage = (timeLeft / totalTime) * 100;
             progressFill.style.width = `${percentage}%`;
         }
-        
+
         // Actualizar contador de Pomodoros
         function updatePomodoroCounter() {
             const dots = document.querySelectorAll('.pomodoro-dot');
@@ -744,31 +753,20 @@ else if (mode === 'longBreak') {
                 }
             });
         }
-        
+
         // Verificar logros
         function checkAchievements() {
             allAchievements.forEach(achievement => {
                 if (!achievement.earned) {
                     let earned = false;
-                    
-                    switch(achievement.id) {
+                    switch (achievement.id) {
                         case 'first-pomodoro':
                             earned = pomodoroCount >= 1;
                             break;
                         case 'five-pomodoros':
                             earned = pomodoroCount >= 5;
                             break;
-                        case 'challenge-master':
-                            // Este se manejaría con un contador separado
-                            break;
-                        case 'streak-3':
-                            // Requeriría seguimiento diario
-                            break;
-                        case 'focus-monster':
-                            // Requeriría seguimiento de sesiones sin pausa
-                            break;
                     }
-                    
                     if (earned) {
                         achievement.earned = true;
                         puntos += achievement.points;
@@ -778,45 +776,30 @@ else if (mode === 'longBreak') {
                 }
             });
         }
-        
+
         // Mostrar logro
         function showAchievement(achievement) {
             logroTitulo.textContent = achievement.title;
             logroDescripcion.textContent = achievement.description;
             modalLogro.classList.add('active');
         }
-        
-        // Reproducir sonido de alarma usando Web Audio API
+
+        // Reproducir sonido de alarma
         function playAlarmSound() {
             if (!audioContext) {
-                // Crear contexto de audio si no existe
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
-            
-            // Crear un oscilador
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
-            
-            // Configurar el oscilador
             oscillator.type = 'square';
-            oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // 800 Hz
-            
-            // Configurar el nodo de ganancia para controlar el volumen
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
             gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
-            
-            // Conectar los nodos
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
-            
-            // Programar el sonido
             oscillator.start();
-            oscillator.stop(audioContext.currentTime + 0.5); // 0.5 segundos de duración
-            
-            // Si el contexto está suspendido (por políticas de autoplay), intentar reanudarlo
+            oscillator.stop(audioContext.currentTime + 0.5);
             if (audioContext.state === 'suspended') {
-                audioContext.resume().then(() => {
-                    console.log('AudioContext reanudado exitosamente');
-                });
+                audioContext.resume();
             }
         }
 
@@ -829,18 +812,29 @@ else if (mode === 'longBreak') {
                 pomodoroCount = parseInt(localStorage.getItem('pomodoroCount'));
             }
         }
-        
+
         // Guardar en localStorage
         function saveToLocalStorage() {
             localStorage.setItem('puntosPomodoro', puntos);
             localStorage.setItem('pomodoroCount', pomodoroCount);
         }
-        
+
         // Event Listeners
         startBtn.addEventListener('click', startTimer);
         pauseBtn.addEventListener('click', pauseTimer);
         skipBtn.addEventListener('click', skipTimer);
         resetBtn.addEventListener('click', resetTimer);
+        settingsBtn.addEventListener('click', () => {
+            modalConfig.classList.add('active');
+        });
+        cerrarConfig.addEventListener('click', () => {
+            modalConfig.classList.remove('active');
+            if (currentMode === 'work' && !isRunning) {
+                setupMode('work');
+            } else if ((currentMode === 'break' || currentMode === 'longBreak') && !isRunning) {
+                setupMode(currentMode);
+            }
+        });
         modalDesafioCompleteBtn.addEventListener('click', completeChallenge);
         reglasBtn.addEventListener('click', () => {
             modalReglas.classList.add('active');
@@ -851,21 +845,19 @@ else if (mode === 'longBreak') {
         cerrarLogro.addEventListener('click', () => {
             modalLogro.classList.remove('active');
         });
-        
-        // Permitir actualizar tiempos sobre la marcha
+
         workTimeInput.addEventListener('change', () => {
             if (currentMode === 'work' && !isRunning) {
                 setupMode('work');
             }
         });
-        
+
         breakTimeInput.addEventListener('change', () => {
             if ((currentMode === 'break' || currentMode === 'longBreak') && !isRunning) {
                 setupMode(currentMode);
             }
         });
-        
-        
+
         // Inicializar el juego
         document.addEventListener('DOMContentLoaded', () => {
             initTimer();
